@@ -22,15 +22,17 @@ const Home = () => {
         }
     };
 
-    const createUser = async () => {
+   const createUser = async () => {
         try {
             const response = await fetch(`${API_URL}/users/${USERNAME}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify([]) 
+                // Headers y body son opcionales para este endpoint en el POST inicial
+                // Quitando el 'body' puede resolver el 400.
+                headers: { "Content-Type": "application/json" } 
             });
             
-            if (response.ok || response.status === 400) {
+            // Debe continuar si fue éxito (201) o si ya existía (400)
+            if (response.ok || response.status === 400) { 
                 console.log(`Usuario ${USERNAME} listo o ya existente. Iniciando carga...`);
                 getTasks(); 
             } else {
@@ -68,22 +70,25 @@ const Home = () => {
     };
 
     const deleteTask = async (taskId) => {
-        const taskIdString = String(taskId); 
-        
-        if (!taskId) {
+        // 1. Nos aseguramos de que el ID sea un número entero (solución común para 4geeks API)
+        const taskIdentifier = parseInt(taskId);
+
+        if (!taskIdentifier) {
             console.error("No se pudo eliminar: taskId es inválido o undefined.");
             return;
         }
 
         try {
-            const response = await fetch(`${API_URL}/todos/${USERNAME}/${taskIdString}`, {
+            // Usamos el ID limpiado
+            const response = await fetch(`${API_URL}/todos/${USERNAME}/${taskIdentifier}`, {
                 method: "DELETE"
             });
 
             if (response.ok) {
+                console.log(`Tarea ${taskIdentifier} eliminada. Recargando lista.`);
                 await getTasks();
             } else {
-                console.error(`Error al eliminar la tarea ${taskIdString}:`, response.status, response.statusText);
+                console.error(`Error al eliminar la tarea ${taskIdentifier}: ${response.status}`, response.statusText);
             }
         } catch (error) {
             console.error("Hubo un problema con la operación DELETE:", error);
