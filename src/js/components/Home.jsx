@@ -7,6 +7,7 @@ const Home = () => {
     const [tasks, setTasks] = useState([]);
     const [newTask, setNewTask] = useState("");
 
+    // Obtener tareas del usuario
     const getTasks = async () => {
         try {
             const response = await fetch(`${API_URL}/users/${USERNAME}`);
@@ -15,34 +16,32 @@ const Home = () => {
                 return;
             }
             const data = await response.json();
-            setTasks(data.todos); 
-            console.log(`Tareas cargadas exitosamente. Total: ${data.todos.length}`);
+            setTasks(data.todos || []);
         } catch (error) {
             console.error("Hubo un problema con la operación GET:", error);
         }
     };
 
-   const createUser = async () => {
+    // Crear usuario si no existe
+    const createUser = async () => {
         try {
             const response = await fetch(`${API_URL}/users/${USERNAME}`, {
                 method: "POST",
-                // Headers y body son opcionales para este endpoint en el POST inicial
-                // Quitando el 'body' puede resolver el 400.
-                headers: { "Content-Type": "application/json" } 
+                headers: { "Content-Type": "application/json" }
             });
             
-            // Debe continuar si fue éxito (201) o si ya existía (400)
             if (response.ok || response.status === 400) { 
-                console.log(`Usuario ${USERNAME} listo o ya existente. Iniciando carga...`);
-                getTasks(); 
+                console.log(`Usuario ${USERNAME} listo o ya existente. Cargando tareas...`);
+                await getTasks(); 
             } else {
                 console.error("Error al crear el usuario:", response.status, response.statusText);
             }
         } catch (error) {
-            console.error("Hubo un problema con la operación fetch (createUser):", error);
+            console.error("Hubo un problema al crear el usuario:", error);
         }
     };
-    
+
+    // Agregar nueva tarea
     const addTask = async () => {
         if (newTask.trim() === "") return;
 
@@ -65,36 +64,32 @@ const Home = () => {
                 console.error("Error al agregar la tarea:", response.status, response.statusText);
             }
         } catch (error) {
-            console.error("Hubo un problema con la operación POST:", error);
+            console.error("Hubo un problema al agregar la tarea:", error);
         }
     };
-
     const deleteTask = async (taskId) => {
-        // 1. Nos aseguramos de que el ID sea un número entero (solución común para 4geeks API)
-        const taskIdentifier = parseInt(taskId);
-
-        if (!taskIdentifier) {
+        if (!taskId) {
             console.error("No se pudo eliminar: taskId es inválido o undefined.");
             return;
         }
 
         try {
-            // Usamos el ID limpiado
-            const response = await fetch(`${API_URL}/todos/${USERNAME}/${taskIdentifier}`, {
+            const response = await fetch(`${API_URL}/todos/${taskId}`, {
                 method: "DELETE"
             });
 
             if (response.ok) {
-                console.log(`Tarea ${taskIdentifier} eliminada. Recargando lista.`);
+                console.log(`Tarea ${taskId} eliminada correctamente.`);
                 await getTasks();
             } else {
-                console.error(`Error al eliminar la tarea ${taskIdentifier}: ${response.status}`, response.statusText);
+                console.error(`Error al eliminar la tarea ${taskId}:`, response.status, response.statusText);
             }
         } catch (error) {
             console.error("Hubo un problema con la operación DELETE:", error);
         }
     };
 
+    // Limpiar todas las tareas del usuario
     const clearAllTasks = async () => {
         try {
             const response = await fetch(`${API_URL}/users/${USERNAME}`, {
@@ -108,7 +103,7 @@ const Home = () => {
                 console.error("Error al limpiar todas las tareas:", response.status, response.statusText);
             }
         } catch (error) {
-            console.error("Hubo un problema con la operación DELETE (clearAllTasks):", error);
+            console.error("Hubo un problema al limpiar todas las tareas:", error);
         }
     };
 
@@ -127,11 +122,7 @@ const Home = () => {
                     placeholder={tasks.length === 0 ? "No hay tareas, añadir nueva tarea" : "Añadir nueva tarea"}
                     value={newTask}
                     onChange={e => setNewTask(e.target.value)}
-                    onKeyDown={e => {
-                        if (e.key === "Enter") {
-                            addTask();
-                        }
-                    }}
+                    onKeyDown={e => e.key === "Enter" && addTask()}
                 /> 
                 
                 <ul className="list-group list-group-flush">
