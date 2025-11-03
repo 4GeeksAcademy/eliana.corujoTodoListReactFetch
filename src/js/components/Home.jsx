@@ -1,28 +1,159 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-//include images into your bundle
-import rigoImage from "../../img/rigo-baby.jpg";
+const API_URL = "https://playground.4geeks.com/todo";
+const USERNAME = "Eliana Corujo"; 
 
-//create your first component
 const Home = () => {
-	return (
-		<div className="text-center">
-            
+    const [tasks, setTasks] = useState([]);
+    const [newTask, setNewTask] = useState("");
 
-			<h1 className="text-center mt-5">Hello Rigo!</h1>
-			<p>
-				<img src={rigoImage} />
-			</p>
-			<a href="#" className="btn btn-success">
-				If you see this green button... bootstrap is working...
-			</a>
-			<p>
-				Made by{" "}
-				<a href="http://www.4geeksacademy.com">4Geeks Academy</a>, with
-				love!
-			</p>
-		</div>
-	);
+    const getTasks = async () => {
+        try {
+            const response = await fetch(`${API_URL}/users/${USERNAME}`);
+            if (!response.ok) {
+                console.error(`Error al obtener tareas: ${response.status} ${response.statusText}`);
+                return;
+            }
+            const data = await response.json();
+            setTasks(data.todos); 
+            console.log(`Tareas cargadas exitosamente. Total: ${data.todos.length}`);
+        } catch (error) {
+            console.error("Hubo un problema con la operación GET:", error);
+        }
+    };
+
+    const createUser = async () => {
+        try {
+            const response = await fetch(`${API_URL}/users/${USERNAME}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify([]) 
+            });
+            
+            if (response.ok || response.status === 400) {
+                console.log(`Usuario ${USERNAME} listo o ya existente. Iniciando carga...`);
+                getTasks(); 
+            } else {
+                console.error("Error al crear el usuario:", response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error("Hubo un problema con la operación fetch (createUser):", error);
+        }
+    };
+    
+    const addTask = async () => {
+        if (newTask.trim() === "") return;
+
+        const newTaskObject = {
+            label: newTask.trim(), 
+            is_done: false 
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/todos/${USERNAME}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newTaskObject)
+            });
+
+            if (response.ok) {
+                await getTasks();
+                setNewTask("");
+            } else {
+                console.error("Error al agregar la tarea:", response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error("Hubo un problema con la operación POST:", error);
+        }
+    };
+
+    const deleteTask = async (taskId) => {
+        try {
+            const response = await fetch(`${API_URL}/todos/${USERNAME}/${taskId}`, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                await getTasks();
+            } else {
+                console.error(`Error al eliminar la tarea ${taskId}:`, response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error("Hubo un problema con la operación DELETE:", error);
+        }
+    };
+
+    const clearAllTasks = async () => {
+        try {
+            const response = await fetch(`${API_URL}/users/${USERNAME}`, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                console.log(`Usuario ${USERNAME} y todas sus tareas eliminadas. Recreando...`);
+                await createUser(); 
+            } else {
+                console.error("Error al limpiar todas las tareas:", response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error("Hubo un problema con la operación DELETE (clearAllTasks):", error);
+        }
+    };
+
+    useEffect(() => {
+        createUser();
+    }, []);
+
+    return (
+        <div className="container mt-5">
+            <h1 className="text-center todo-title">Tareas de {USERNAME}</h1>
+            
+            <div className="todo-list-card">
+                <input 
+                    type="text"
+                    className="form-control"
+                    placeholder={tasks.length === 0 ? "No hay tareas, añadir nueva tarea" : "Añadir nueva tarea"}
+                    value={newTask}
+                    onChange={e => setNewTask(e.target.value)}
+                    onKeyDown={e => {
+                        if (e.key === "Enter") {
+                            addTask();
+                        }
+                    }}
+                /> 
+                
+                <ul className="list-group list-group-flush">
+                    {tasks.map((task) => (
+                        <li 
+                            key={task.id} 
+                            className="list-group-item d-flex justify-content-between align-items-center"
+                        >
+                            {task.label}
+                            <span 
+                                className="delete-icon" 
+                                onClick={() => deleteTask(task.id)} 
+                                style={{ cursor: 'pointer', color: '#ff4d4d' }}
+                            >
+                                ❌
+                            </span>
+                        </li>
+                    ))}
+                    <li className="list-group-item footer-item text-muted">
+                        {tasks.length} item{tasks.length !== 1 ? 's' : ''} left
+                    </li>
+                </ul>
+                
+                {tasks.length > 0 && (
+                    <button 
+                        className="btn btn-danger btn-sm mt-3 w-100" 
+                        onClick={clearAllTasks}
+                    >
+                        Limpiar todas las tareas
+                    </button>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default Home;
