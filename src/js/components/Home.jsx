@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 const API_URL = "https://playground.4geeks.com/todo";
-const USERNAME = "Eliana Corujo"; 
+const USERNAME = "ElianaCorujo"; 
 
 const Home = () => {
     const [tasks, setTasks] = useState([]);
@@ -68,15 +68,22 @@ const Home = () => {
     };
 
     const deleteTask = async (taskId) => {
+        const taskIdString = String(taskId); 
+        
+        if (!taskId) {
+            console.error("No se pudo eliminar: taskId es inválido o undefined.");
+            return;
+        }
+
         try {
-            const response = await fetch(`${API_URL}/todos/${USERNAME}/${taskId}`, {
+            const response = await fetch(`${API_URL}/todos/${USERNAME}/${taskIdString}`, {
                 method: "DELETE"
             });
 
             if (response.ok) {
                 await getTasks();
             } else {
-                console.error(`Error al eliminar la tarea ${taskId}:`, response.status, response.statusText);
+                console.error(`Error al eliminar la tarea ${taskIdString}:`, response.status, response.statusText);
             }
         } catch (error) {
             console.error("Hubo un problema con la operación DELETE:", error);
